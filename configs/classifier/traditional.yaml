@@ -1,0 +1,21 @@
+run:
+  name: traditional
+  out_subdir: 03_traditional
+
+train:
+  backbone: tf_efficientnetv2_s.in21k_ft_in1k
+  pretrained: true
+  image_size: 384
+  batch_size: 32
+  epochs: 60
+  warmup_epochs: 3
+  backbone_lr: 3.0e-5
+  head_lr: 3.0e-4
+  weight_decay: 1.0e-4
+  loss: bce
+  dropout: 0.3
+  ema_decay: 0.999
+  patience: 15
+  train_transform: traditional
+  weighted_sampler: true
+  synth_mix: null

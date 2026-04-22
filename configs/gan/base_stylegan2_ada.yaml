@@ -1,0 +1,25 @@
+run:
+  out_subdir: 04_stylegan
+
+stylegan:
+  repo_dir: third_party/stylegan2-ada-pytorch   # clone here; see Colab notebook
+  resolution: 256
+  cfg: auto
+  kimg_base: 25000          # total kimg for base (tüm abnormal pool)
+  kimg_finetune: 2000       # her sınıf için transfer kimg
+  snap: 50
+  mirror: 1
+  gpus: 1
+  augpipe: bgc
+  fid_max_accept: 150.0     # FID > this → sınıf enjekte edilmez
+
+pool:
+  single_label_only: true   # multi-label imgeler generator training'e girmez
+  per_class_dir: outputs/04_stylegan/pools   # her sınıfın real pool'u burada
+  all_abnormal_dir: outputs/04_stylegan/pools/_all_abnormal
+
+generation:
+  target_per_class: 1500
+  cap_factor: 3.0
+  samples_for_fid: 500
+  preview_grid: 36

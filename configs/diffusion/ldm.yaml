@@ -1,0 +1,28 @@
+run:
+  out_subdir: 06_ldm/unet
+
+ldm:
+  vae_ckpt: outputs/06_ldm/vae/best.pth
+  image_size: 256
+  latent_channels: 4
+  latent_size: 32
+  channels: [128, 256, 256, 512]
+  attention_levels: [false, true, true, true]
+  num_res_blocks: 2
+  num_head_channels: 64
+  batch_size: 16
+  lr: 1.0e-4
+  max_steps: 100000
+  val_every: 2000
+  num_train_timesteps: 1000
+  schedule: scaled_linear
+  classifier_free_prob: 0.15
+  guidance_scale: 4.0
+  ddim_steps: 50
+  fid_max_accept: 150.0
+
+generation:
+  target_per_class: 1500
+  cap_factor: 3.0
+  samples_for_fid: 500
+  preview_grid: 36

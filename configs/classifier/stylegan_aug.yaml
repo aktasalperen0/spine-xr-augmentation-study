@@ -1,0 +1,32 @@
+run:
+  name: stylegan_aug
+  out_subdir: 06_stylegan_aug
+
+train:
+  backbone: tf_efficientnetv2_s.in21k_ft_in1k
+  pretrained: true
+  image_size: 384
+  batch_size: 32
+  epochs: 60
+  warmup_epochs: 3
+  backbone_lr: 3.0e-5
+  head_lr: 3.0e-4
+  weight_decay: 1.0e-4
+  loss: bce
+  dropout: 0.3
+  ema_decay: 0.999
+  patience: 15
+  train_transform: traditional
+  weighted_sampler: true
+  synth_mix:
+    metadata_csv: outputs/05_stylegan_synth/synthetic_metadata.csv
+    target_per_class: 1500
+    cap_factor: 3.0
+    ratio_per_class:
+      Vertebral collapse: 0.8
+      Spondylolysthesis: 0.6
+      Surgical implant: 0.6
+      Foraminal stenosis: 0.6
+      Other lesions: 0.5
+      Disc space narrowing: 0.3
+      Osteophytes: 0.0

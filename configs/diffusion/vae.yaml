@@ -1,0 +1,16 @@
+run:
+  out_subdir: 06_ldm/vae
+
+vae:
+  image_size: 256
+  latent_channels: 4
+  channels: [64, 128, 128, 256]
+  attention_levels: [false, false, false, true]
+  num_res_blocks: 2
+  batch_size: 8
+  epochs: 50
+  lr: 1.0e-4
+  kl_weight: 1.0e-6
+  perceptual_weight: 0.1
+  adv_weight: 0.05
+  warmup_epochs: 5
