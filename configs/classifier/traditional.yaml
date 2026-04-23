@@ -3,7 +3,7 @@ run:
   out_subdir: 03_traditional
 
 train:
-  backbone: tf_efficientnetv2_s.in21k_ft_in1k
+  backbone: radimagenet_resnet50  # medikal pretrain; weights/radimagenet_resnet50.pth gerekli. ImageNet ablation: tf_efficientnetv2_s.in21k_ft_in1k
   pretrained: true
   image_size: 384
   batch_size: 32
@@ -19,3 +19,9 @@ train:
   train_transform: traditional
   weighted_sampler: true
   synth_mix: null
+  mixup:
+    enabled: true
+    alpha: 0.2          # MixUp Beta param
+    cutmix_alpha: 1.0   # CutMix Beta param
+    prob: 0.5           # CutMix vs MixUp seçim olasılığı
+    apply_prob: 0.8     # batch başına karıştırma uygulama olasılığı

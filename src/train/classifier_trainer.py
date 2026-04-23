@@ -12,6 +12,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, WeightedRandomSampler
 
 from src.data.dataset import SpineXRDataset, compute_pos_weight, compute_sample_weights
+from src.data.mixup import MixupConfig, apply_mixup
 from src.data.transforms import build_transform
 from src.models.classifier import SpineClassifier, param_groups
 from src.models.ema import ModelEMA
@@ -98,6 +99,11 @@ def train_one_fold(cfg: dict, train_df: pd.DataFrame, val_df: pd.DataFrame,
 
     ema = ModelEMA(model, decay=tcfg.get("ema_decay", 0.999))
     scaler = torch.cuda.amp.GradScaler(enabled=device == "cuda")
+    mixup_cfg = MixupConfig.from_dict(tcfg.get("mixup"))
+    mixup_rng = np.random.default_rng(cfg["project"]["seed"])
+    if mixup_cfg.enabled:
+        log.info(f"Mixup enabled: alpha={mixup_cfg.alpha} cutmix_alpha={mixup_cfg.cutmix_alpha} "
+                 f"prob={mixup_cfg.prob} apply_prob={mixup_cfg.apply_prob}")
 
     best_f1 = -1.0
     best_epoch = -1
@@ -111,7 +117,9 @@ def train_one_fold(cfg: dict, train_df: pd.DataFrame, val_df: pd.DataFrame,
         n = 0
         for imgs, labels in train_loader:
             imgs = imgs.to(device, non_blocking=True)
-            labels = labels.to(device, non_blocking=True)
+            labels = labels.to(device, non_blocking=True).float()
+            if mixup_cfg.enabled:
+                imgs, labels = apply_mixup(imgs, labels, mixup_cfg, mixup_rng)
             optimizer.zero_grad(set_to_none=True)
             with torch.cuda.amp.autocast(enabled=device == "cuda"):
                 logits = model(imgs)

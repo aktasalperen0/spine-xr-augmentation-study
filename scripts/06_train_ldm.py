@@ -10,6 +10,7 @@ sys.path.insert(0, str(ROOT))
 
 import pandas as pd
 
+from src.data.audit import lesion_classes
 from src.utils.config import load_with_base
 from src.utils.logging import get_logger
 
@@ -39,7 +40,8 @@ def main() -> None:
     df = pd.read_csv(audit)
     # For VAE/UNet training, exclude multi-label images (single-label + normal only)
     if stage == "ldm":
-        single = df[cfg["classes"]].sum(axis=1)
+        # Count lesion positives only — "No finding" aux column must not break the filter.
+        single = df[lesion_classes(cfg["classes"])].sum(axis=1)
         df = df[(single == 1) | (single == 0)].reset_index(drop=True)
     out_dir = Path(cfg["paths"]["outputs_root"]) / cfg["run"]["out_subdir"]
     ckpt = trainer(cfg, df, out_dir)

@@ -15,6 +15,8 @@ import pandas as pd
 import torch
 from PIL import Image
 
+from src.data.audit import lesion_classes
+from src.eval.fid_gate import resolve_fid_threshold
 from src.train.ldm_trainer import build_unet, build_vae, sample_ldm
 from src.utils.config import load_with_base
 from src.utils.logging import get_logger
@@ -70,7 +72,9 @@ def main() -> None:
 
     fid_rows = []
     meta_rows = []
-    for ci, c in enumerate(classes):
+    lesions = lesion_classes(classes)
+    for c in lesions:
+        ci = classes.index(c)
         safe = c.replace(" ", "_")
         real_count = int(audit[c].sum())
         n_target = min(
@@ -96,11 +100,13 @@ def main() -> None:
         # real pool for FID — reuse stylegan pool if present
         real_pool = ROOT / "outputs/04_stylegan/pools" / safe
         fid = _compute_fid(real_pool, cls_dir) if real_pool.exists() else float("nan")
-        fid_rows.append({"class": c, "fid": fid, "n_real": real_count, "n_generated": n_gen})
-        log.info(f"  FID={fid:.2f}")
+        threshold = resolve_fid_threshold(cfg["ldm"]["fid_max_accept"], real_count)
+        fid_rows.append({"class": c, "fid": fid, "n_real": real_count,
+                          "n_generated": n_gen, "fid_threshold": threshold})
+        log.info(f"  FID={fid:.2f}  threshold={threshold:.1f}")
 
-        if fid > cfg["ldm"]["fid_max_accept"] or not np.isfinite(fid):
-            log.warning(f"  {c}: FID above threshold — NOT added to metadata")
+        if fid > threshold or not np.isfinite(fid):
+            log.warning(f"  {c}: FID above threshold ({threshold:.1f}) — NOT added to metadata")
             continue
         for i in range(n_target):
             row = {"image_id": f"ldm_{safe}_{i:05d}",

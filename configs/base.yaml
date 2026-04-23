@@ -25,6 +25,7 @@ classes:
   - Surgical implant
   - Spondylolysthesis
   - Vertebral collapse
+  - No finding        # CheXpert stili yardımcı sınıf; macro-F1 raporunda hariç tutulur
 
 cv:
   n_splits: 3
