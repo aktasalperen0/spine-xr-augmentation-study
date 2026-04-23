@@ -11,6 +11,8 @@ from sklearn.metrics import (
     roc_auc_score,
 )
 
+from src.data.audit import NO_FINDING_CLASS
+
 
 def compute_metrics(
     y_true: np.ndarray,
@@ -46,14 +48,19 @@ def compute_metrics(
         })
 
     df = pd.DataFrame(rows)
-    support = df["n_pos"].values.astype(float)
+
+    # Macro / weighted aggregates cover lesion classes only — the "No finding"
+    # auxiliary head is an easy majority class and would inflate scores.
+    lesion_mask = df["class"].ne(NO_FINDING_CLASS).values
+    lesion_df = df[lesion_mask]
+    support = lesion_df["n_pos"].values.astype(float)
     total = support.sum()
     weights = support / total if total > 0 else np.ones_like(support) / len(support)
+    macro_w = np.ones(len(lesion_df)) / max(len(lesion_df), 1)
 
-    for name, w in [("macro", np.ones(len(class_names)) / len(class_names)),
-                    ("weighted", weights)]:
+    for name, w in [("macro", macro_w), ("weighted", weights)]:
         def wavg(col):
-            vals = df[col].values
+            vals = lesion_df[col].values
             mask = ~np.isnan(vals)
             if not mask.any():
                 return float("nan")

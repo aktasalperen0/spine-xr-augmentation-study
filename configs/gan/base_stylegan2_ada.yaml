@@ -11,7 +11,9 @@ stylegan:
   mirror: 1
   gpus: 1
   augpipe: bgc
-  fid_max_accept: 150.0     # FID > this → sınıf enjekte edilmez
+  # FID > threshold → sınıf enjekte edilmez. "dynamic" = pool büyüklüğüne göre
+  # azınlıkta 250, orta 200, çoğunlukta 150 (src/eval/fid_gate.py).
+  fid_max_accept: dynamic
 
 pool:
   single_label_only: true   # multi-label imgeler generator training'e girmez

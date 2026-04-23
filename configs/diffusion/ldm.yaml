@@ -19,7 +19,7 @@ ldm:
   classifier_free_prob: 0.15
   guidance_scale: 4.0
   ddim_steps: 50
-  fid_max_accept: 150.0
+  fid_max_accept: dynamic  # azınlıkta 250, orta 200, çoğunlukta 150 (src/eval/fid_gate.py)
 
 generation:
   target_per_class: 1500

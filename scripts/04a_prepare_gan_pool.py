@@ -13,6 +13,7 @@ import cv2
 import pandas as pd
 from tqdm import tqdm
 
+from src.data.audit import lesion_classes
 from src.utils.config import load_with_base
 from src.utils.logging import get_logger
 
@@ -41,7 +42,7 @@ def main() -> None:
     args = ap.parse_args()
     cfg = load_with_base(args.config, base_path=ROOT / "configs" / "base.yaml")
     log = get_logger()
-    classes = cfg["classes"]
+    classes = lesion_classes(cfg["classes"])  # GAN pools never cover the No finding aux class
     resolution = cfg["stylegan"]["resolution"]
 
     audit_dir = Path(cfg["paths"]["outputs_root"]) / "01_audit"

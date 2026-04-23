@@ -6,6 +6,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from src.models.backbones import is_radimagenet_backbone, load_radimagenet_backbone
+
 
 class GeM(nn.Module):
     def __init__(self, p: float = 3.0, eps: float = 1e-6):
@@ -23,9 +25,12 @@ class SpineClassifier(nn.Module):
     def __init__(self, backbone_name: str, num_classes: int, dropout: float = 0.3,
                  pretrained: bool = True):
         super().__init__()
-        self.backbone = timm.create_model(
-            backbone_name, pretrained=pretrained, num_classes=0, global_pool=""
-        )
+        if is_radimagenet_backbone(backbone_name):
+            self.backbone = load_radimagenet_backbone(backbone_name, pretrained=pretrained)
+        else:
+            self.backbone = timm.create_model(
+                backbone_name, pretrained=pretrained, num_classes=0, global_pool=""
+            )
         feat_dim = self.backbone.num_features
         self.pool = GeM()
         self.head = nn.Sequential(

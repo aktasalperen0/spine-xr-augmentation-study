@@ -19,6 +19,8 @@ import torch
 from PIL import Image
 from tqdm import tqdm
 
+from src.data.audit import lesion_classes
+from src.eval.fid_gate import resolve_fid_threshold
 from src.utils.config import load_with_base
 from src.utils.logging import get_logger
 
@@ -81,6 +83,7 @@ def main() -> None:
     cfg = load_with_base(args.config, base_path=ROOT / "configs" / "base.yaml")
     log = get_logger()
     classes = cfg["classes"]
+    gen_classes = lesion_classes(classes)
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     gan_out = Path(cfg["paths"]["outputs_root"]) / cfg["run"]["out_subdir"]
@@ -92,7 +95,7 @@ def main() -> None:
 
     fid_rows = []
     meta_rows = []
-    for c in classes:
+    for c in gen_classes:
         safe = c.replace(" ", "_")
         pkls = sorted((gan_out / f"finetune_{safe}").rglob("network-snapshot-*.pkl"))
         if not pkls:
@@ -117,11 +120,13 @@ def main() -> None:
         _save_grid(imgs, cls_dir / "preview.png", cfg["generation"]["preview_grid"])
         real_pool = ROOT / cfg["pool"]["per_class_dir"] / safe
         fid = _compute_fid(real_pool, cls_dir)
-        fid_rows.append({"class": c, "fid": fid, "n_real": real_counts[c], "n_generated": n_gen})
-        log.info(f"  {c}: FID={fid:.2f}")
+        threshold = resolve_fid_threshold(cfg["stylegan"]["fid_max_accept"], real_counts[c])
+        fid_rows.append({"class": c, "fid": fid, "n_real": real_counts[c],
+                          "n_generated": n_gen, "fid_threshold": threshold})
+        log.info(f"  {c}: FID={fid:.2f}  threshold={threshold:.1f}")
 
-        if fid > cfg["stylegan"]["fid_max_accept"] or not np.isfinite(fid):
-            log.warning(f"  {c}: FID above threshold — NOT added to metadata")
+        if fid > threshold or not np.isfinite(fid):
+            log.warning(f"  {c}: FID above threshold ({threshold:.1f}) — NOT added to metadata")
             continue
         for i in range(n_target):
             row = {"image_id": f"stylegan_{safe}_{i:05d}",

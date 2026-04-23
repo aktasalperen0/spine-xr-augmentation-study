@@ -3,7 +3,7 @@ run:
   out_subdir: 07_ldm_aug
 
 train:
-  backbone: tf_efficientnetv2_s.in21k_ft_in1k
+  backbone: radimagenet_resnet50  # medikal pretrain; weights/radimagenet_resnet50.pth gerekli. ImageNet ablation: tf_efficientnetv2_s.in21k_ft_in1k
   pretrained: true
   image_size: 384
   batch_size: 32
