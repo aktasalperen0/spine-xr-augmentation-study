@@ -26,12 +26,15 @@ def _predict_one(ckpt_path: Path, test_df: pd.DataFrame, cfg: dict, device: str)
                         build_transform("val", run_cfg["train"]["image_size"]))
     loader = DataLoader(ds, batch_size=run_cfg["train"]["batch_size"], shuffle=False,
                         num_workers=cfg["project"]["num_workers"], pin_memory=True)
+    tta = cfg.get("eval", {}).get("tta", "hflip")
     scores = []
     for imgs, _ in loader:
         imgs = imgs.to(device)
         with torch.cuda.amp.autocast(enabled=device == "cuda"):
-            logits = model(imgs)
-        scores.append(torch.sigmoid(logits).float().cpu().numpy())
+            probs = torch.sigmoid(model(imgs))
+            if tta == "hflip":
+                probs = 0.5 * (probs + torch.sigmoid(model(imgs.flip(-1))))
+        scores.append(probs.float().cpu().numpy())
     return np.concatenate(scores, axis=0)
 
 

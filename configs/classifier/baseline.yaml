@@ -12,7 +12,8 @@ train:
   backbone_lr: 3.0e-5
   head_lr: 3.0e-4
   weight_decay: 1.0e-4
-  loss: bce            # bce | asymmetric
+  loss: asymmetric     # bce | asymmetric
+  bootstrapped_asl: true  # warmup_epochs + 2 sonrası BootstrappedASL'e geçer
   dropout: 0.3
   ema_decay: 0.999
   patience: 15

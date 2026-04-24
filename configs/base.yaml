@@ -30,3 +30,6 @@ classes:
 cv:
   n_splits: 3
   random_state: 42
+
+eval:
+  tta: hflip           # hflip | none  (test-time horizontal-flip TTA)
