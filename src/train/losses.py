@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 
 class AsymmetricLoss(nn.Module):
@@ -34,9 +33,34 @@ class AsymmetricLoss(nn.Module):
         return -loss.mean()
 
 
+class BootstrappedASL(nn.Module):
+    """Soft-bootstrapping wrapper around AsymmetricLoss.
+
+    Replaces hard targets with ``beta * targets + (1 - beta) * sigmoid(logits)``
+    so the model can self-correct noisy radiologist labels. Use after an initial
+    warmup phase — bootstrapping a cold model drags training toward its own
+    random predictions.
+    """
+
+    def __init__(self, beta: float = 0.85, gamma_neg: float = 4.0,
+                 gamma_pos: float = 0.0, clip: float = 0.05, eps: float = 1e-8):
+        super().__init__()
+        self.beta = beta
+        self.asl = AsymmetricLoss(gamma_neg=gamma_neg, gamma_pos=gamma_pos,
+                                  clip=clip, eps=eps)
+
+    def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        with torch.no_grad():
+            soft = torch.sigmoid(logits).detach()
+        new_targets = self.beta * targets + (1.0 - self.beta) * soft
+        return self.asl(logits, new_targets)
+
+
 def build_loss(name: str, pos_weight: torch.Tensor | None = None) -> nn.Module:
     if name == "bce":
         return nn.BCEWithLogitsLoss(pos_weight=pos_weight)
     if name == "asymmetric":
         return AsymmetricLoss()
+    if name == "bootstrapped_asl":
+        return BootstrappedASL()
     raise ValueError(f"unknown loss: {name}")

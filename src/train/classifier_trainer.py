@@ -18,7 +18,7 @@ from src.models.classifier import SpineClassifier, param_groups
 from src.models.ema import ModelEMA
 from src.eval.metrics import compute_metrics
 from src.eval.threshold import find_best_thresholds
-from src.train.losses import build_loss
+from src.train.losses import BootstrappedASL, build_loss
 from src.utils.logging import get_logger
 from src.utils.seeding import seed_everything
 
@@ -111,7 +111,16 @@ def train_one_fold(cfg: dict, train_df: pd.DataFrame, val_df: pd.DataFrame,
     no_improve = 0
     history = []
 
+    boot_enabled = bool(tcfg.get("bootstrapped_asl", False)) and tcfg["loss"] == "asymmetric"
+    boot_switch_epoch = tcfg.get("warmup_epochs", 3) + 2
+
     for epoch in range(1, tcfg["epochs"] + 1):
+        if boot_enabled and epoch > boot_switch_epoch and not isinstance(criterion, BootstrappedASL):
+            criterion = build_loss("bootstrapped_asl")
+            log.info(f"[epoch {epoch}] Switched to Bootstrapped ASL (beta={criterion.beta})")
+            if mixup_cfg.enabled:
+                mixup_cfg.enabled = False
+                log.info(f"[epoch {epoch}] Disabled Mixup/CutMix to avoid double label smoothing")
         model.train()
         running = 0.0
         n = 0
@@ -125,6 +134,8 @@ def train_one_fold(cfg: dict, train_df: pd.DataFrame, val_df: pd.DataFrame,
                 logits = model(imgs)
                 loss = criterion(logits, labels)
             scaler.scale(loss).backward()
+            scaler.unscale_(optimizer)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             scaler.step(optimizer)
             scaler.update()
             scheduler.step()

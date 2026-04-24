@@ -1,11 +1,13 @@
-"""Train/val transform presets. Grayscale X-ray → 3-channel (ImageNet stats)."""
+"""Train/val transform presets. Grayscale X-ray → 3-channel (RadImageNet stats)."""
 from __future__ import annotations
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
-IMAGENET_MEAN = (0.485, 0.456, 0.406)
-IMAGENET_STD = (0.229, 0.224, 0.225)
+# RadImageNet normalization: backbone pretrained on grayscale medical images,
+# so each channel is centered at 0.5 (input range already [0, 1] after scaling).
+IMAGENET_MEAN = (0.5, 0.5, 0.5)
+IMAGENET_STD = (0.5, 0.5, 0.5)
 
 
 def _clahe_preprocess() -> A.BasicTransform:
