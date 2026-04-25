@@ -7,9 +7,9 @@ vae:
   channels: [64, 128, 128, 256]
   attention_levels: [false, false, false, true]
   num_res_blocks: 2
-  batch_size: 8
+  batch_size: 64
   epochs: 50
-  lr: 1.0e-4
+  lr: 3.0e-4
   kl_weight: 1.0e-6
   perceptual_weight: 0.1
   adv_weight: 0.05

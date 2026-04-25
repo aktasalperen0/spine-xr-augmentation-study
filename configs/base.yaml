@@ -1,7 +1,7 @@
 project:
   name: spine-xr-augmentation
   seed: 42
-  num_workers: 4
+  num_workers: 8
 
 paths:
   dataset_root: dataset
@@ -25,11 +25,11 @@ classes:
   - Surgical implant
   - Spondylolysthesis
   - Vertebral collapse
-  - No finding        # CheXpert stili yardımcı sınıf; macro-F1 raporunda hariç tutulur
+  - No finding # CheXpert stili yardımcı sınıf; macro-F1 raporunda hariç tutulur
 
 cv:
   n_splits: 3
   random_state: 42
 
 eval:
-  tta: hflip           # hflip | none  (test-time horizontal-flip TTA)
+  tta: hflip # hflip | none  (test-time horizontal-flip TTA)

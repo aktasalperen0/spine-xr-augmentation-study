@@ -45,7 +45,7 @@ def _evaluate(model: nn.Module, loader: DataLoader, device: str):
     ys, ps = [], []
     for imgs, labels in loader:
         imgs = imgs.to(device, non_blocking=True)
-        with torch.cuda.amp.autocast(enabled=device == "cuda"):
+        with torch.amp.autocast('cuda', enabled=device == "cuda", dtype=torch.bfloat16):
             logits = model(imgs)
         ps.append(torch.sigmoid(logits).float().cpu().numpy())
         ys.append(labels.numpy())
@@ -130,9 +130,13 @@ def train_one_fold(cfg: dict, train_df: pd.DataFrame, val_df: pd.DataFrame,
             if mixup_cfg.enabled:
                 imgs, labels = apply_mixup(imgs, labels, mixup_cfg, mixup_rng)
             optimizer.zero_grad(set_to_none=True)
-            with torch.cuda.amp.autocast(enabled=device == "cuda"):
+            with torch.amp.autocast('cuda', enabled=device == "cuda", dtype=torch.bfloat16):
                 logits = model(imgs)
                 loss = criterion(logits, labels)
+            if torch.isnan(loss) or torch.isinf(loss):
+                print("⚠️ Zehirli Batch Yakalandı (NaN)! Model korunuyor ve bu batch çöpe atılıyor...")
+                optimizer.zero_grad()
+                continue
             scaler.scale(loss).backward()
             scaler.unscale_(optimizer)
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)

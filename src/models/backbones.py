@@ -49,11 +49,37 @@ def _load_state_dict(name: str, pretrained: bool) -> dict | None:
             "https://github.com/BMEII-AI/RadImageNet and place the state_dict "
             f"file as 'radimagenet_{name}.pth'."
         )
-    blob = torch.load(path, map_location="cpu")
-    # Accept either a raw state_dict or a dict wrapper.
-    if isinstance(blob, dict) and "state_dict" in blob:
+    
+    blob = torch.load(path, map_location="cpu", weights_only=False)
+    
+    if hasattr(blob, "state_dict"):
+        blob = blob.state_dict()
+    elif isinstance(blob, dict) and "state_dict" in blob:
         blob = blob["state_dict"]
-    return blob
+        
+    # RADIMAGENET ÇEVİRMEN SÖZLÜĞÜ (Mapping)
+    # Adamların kullandığı rakamlı sistemi, PyTorch'un beklediği isimlere çeviriyoruz
+    prefix_map = {
+        "backbone.0.": "conv1.",
+        "backbone.1.": "bn1.",
+        "backbone.4.": "layer1.",
+        "backbone.5.": "layer2.",
+        "backbone.6.": "layer3.",
+        "backbone.7.": "layer4."
+    }
+    
+    cleaned_state = {}
+    for k, v in blob.items():
+        new_k = k
+        # Sözlükte eşleşen var mı diye bak, varsa değiştir
+        for old_prefix, new_prefix in prefix_map.items():
+            if new_k.startswith(old_prefix):
+                new_k = new_k.replace(old_prefix, new_prefix, 1)
+                break
+                
+        cleaned_state[new_k] = v
+        
+    return cleaned_state
 
 
 def _build_resnet50(pretrained: bool) -> _RadImageNetBackbone:

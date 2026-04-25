@@ -10,8 +10,8 @@ ldm:
   attention_levels: [false, true, true, true]
   num_res_blocks: 2
   num_head_channels: 64
-  batch_size: 16
-  lr: 1.0e-4
+  batch_size: 128
+  lr: 3.0e-4
   max_steps: 100000
   val_every: 2000
   num_train_timesteps: 1000
@@ -19,7 +19,7 @@ ldm:
   classifier_free_prob: 0.15
   guidance_scale: 4.0
   ddim_steps: 50
-  fid_max_accept: dynamic  # azınlıkta 250, orta 200, çoğunlukta 150 (src/eval/fid_gate.py)
+  fid_max_accept: dynamic # azınlıkta 250, orta 200, çoğunlukta 150 (src/eval/fid_gate.py)
 
 generation:
   target_per_class: 1500

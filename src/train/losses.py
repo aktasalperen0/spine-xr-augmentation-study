@@ -16,21 +16,25 @@ class AsymmetricLoss(nn.Module):
         self.clip = clip
         self.eps = eps
 
-    def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        xs_pos = torch.sigmoid(logits)
-        xs_neg = 1 - xs_pos
-        if self.clip is not None and self.clip > 0:
-            xs_neg = (xs_neg + self.clip).clamp(max=1)
-        los_pos = targets * torch.log(xs_pos.clamp(min=self.eps))
-        los_neg = (1 - targets) * torch.log(xs_neg.clamp(min=self.eps))
-        loss = los_pos + los_neg
-        if self.gamma_pos > 0 or self.gamma_neg > 0:
-            pt0 = xs_pos * targets
-            pt1 = xs_neg * (1 - targets)
-            pt = pt0 + pt1
-            gamma = self.gamma_pos * targets + self.gamma_neg * (1 - targets)
-            loss *= (1 - pt) ** gamma
-        return -loss.mean()
+    def forward(self, logits, targets):
+        p = torch.sigmoid(logits)
+        
+        # İhtimalleri güvenli alana hapset (Log(0) imkansızlaşır)
+        p = torch.clamp(p, min=self.eps, max=1.0 - self.eps)
+        
+        p_pos = p
+        p_neg = 1 - p
+        
+        if self.clip > 0:
+            p_neg = torch.clamp(p_neg - self.clip, min=0.0)
+            
+        # === DÜZELTME BURADA: Ağırlık çarpanı p_neg değil, p_pos olmalı! ===
+        loss_pos = -targets * torch.log(p_pos) * ((1 - p_pos) ** self.gamma_pos)
+        loss_neg = -(1 - targets) * torch.log(torch.clamp(p_neg, min=self.eps)) * (p_pos ** self.gamma_neg)
+        # ====================================================================
+        
+        loss = loss_pos + loss_neg
+        return loss.mean()
 
 
 class BootstrappedASL(nn.Module):
@@ -49,11 +53,14 @@ class BootstrappedASL(nn.Module):
         self.asl = AsymmetricLoss(gamma_neg=gamma_neg, gamma_pos=gamma_pos,
                                   clip=clip, eps=eps)
 
-    def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        with torch.no_grad():
-            soft = torch.sigmoid(logits).detach()
-        new_targets = self.beta * targets + (1.0 - self.beta) * soft
-        return self.asl(logits, new_targets)
+    def forward(self, logits, targets):
+        # === KRİTİK DÜZELTME 1: .detach() ile sonsuz gradyan döngüsünü kır ===
+        p = torch.sigmoid(logits).detach()
+        
+        # Hedefler artık gradyan taşımayan, sabit ve güvenli sayılar oldu
+        bootstrapped_targets = self.beta * targets + (1.0 - self.beta) * p
+        
+        return self.asl(logits, bootstrapped_targets)
 
 
 def build_loss(name: str, pos_weight: torch.Tensor | None = None) -> nn.Module:
