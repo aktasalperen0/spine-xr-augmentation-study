@@ -7,7 +7,10 @@
       "Bash(python3 -c ' *)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(gh pr create --title 'StyleGAN2-ADA: PyTorch 2.4 / Colab A100 compatibility patch' --body ' *)",
+      "Read(//opt/homebrew/bin/**)",
+      "Bash(command -v gh)"
     ]
   }
 }
