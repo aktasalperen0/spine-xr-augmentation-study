@@ -3,7 +3,11 @@
     "allow": [
       "Bash(awk -F, 'NR>1{print $5}' dataset/abnormal/train_annotations.csv)",
       "Bash(python -c \"import ast, pathlib; [ast.parse\\(p.read_text\\(\\)\\) for p in pathlib.Path\\('.'\\).rglob\\('*.py'\\) if 'venv' not in str\\(p\\)]\")",
-      "Bash(grep -v '^\\\\.$')"
+      "Bash(grep -v '^\\\\.$')",
+      "Bash(python3 -c ' *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }
